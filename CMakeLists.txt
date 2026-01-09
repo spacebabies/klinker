@@ -45,6 +45,8 @@ target_sources(Klinker
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
+        Source/PluginEditor.cpp
+        Source/PluginEditor.h
 )
 
 # 4. Link against JUCE libraries

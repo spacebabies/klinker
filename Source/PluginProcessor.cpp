@@ -1,13 +1,50 @@
 #include "PluginProcessor.h"
+#include "PluginEditor.h" // We will create this next
 
 KlinkerAudioProcessor::KlinkerAudioProcessor()
      : AudioProcessor (BusesProperties()
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
+                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+       apvts (*this, nullptr, "Parameters", createParameterLayout())
 {
 }
 
 KlinkerAudioProcessor::~KlinkerAudioProcessor() {}
+
+// Define the Parameter Layout (The Rules)
+juce::AudioProcessorValueTreeState::ParameterLayout KlinkerAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    // 1. Delay Time: 200, 250, 300, 350, 400 ms
+    // Range: 200 to 400, Interval: 50
+    layout.add (std::make_unique<juce::AudioParameterFloat>(
+        "DELAY_MS",       // Parameter ID
+        "Delay Time",     // Name
+        juce::NormalisableRange<float>(200.0f, 400.0f, 50.0f), // Range & Step
+        200.0f            // Default value
+    ));
+
+    // 2. Feedback: 0.3, 0.4, 0.5
+    // Range: 0.3 to 0.5, Interval: 0.1
+    layout.add (std::make_unique<juce::AudioParameterFloat>(
+        "FEEDBACK",
+        "Feedback",
+        juce::NormalisableRange<float>(0.3f, 0.5f, 0.1f),
+        0.5f
+    ));
+
+    // 3. Wet Level: 0-100% in steps of 10%
+    // Range: 0.0 to 1.0, Interval: 0.1
+    layout.add (std::make_unique<juce::AudioParameterFloat>(
+        "WET",
+        "Wet Level",
+        juce::NormalisableRange<float>(0.0f, 1.0f, 0.1f),
+        0.5f
+    ));
+
+    return layout;
+}
 
 const juce::String KlinkerAudioProcessor::getName() const { return "Klinker"; }
 bool KlinkerAudioProcessor::acceptsMidi() const { return false; }
@@ -15,9 +52,8 @@ bool KlinkerAudioProcessor::producesMidi() const { return false; }
 bool KlinkerAudioProcessor::isMidiEffect() const { return false; }
 double KlinkerAudioProcessor::getTailLengthSeconds() const
 {
-    // Return the current delay time so the host knows how long the tail is
-    // This prevents audio from being cut off abruptly when playback stops
-    return currentDelayTimeInMs / 1000.0;
+    // Fetch directly from APVTS (safe here)
+    return apvts.getRawParameterValue("DELAY_MS")->load() / 1000.0;
 }
 
 int KlinkerAudioProcessor::getNumPrograms() { return 1; }
@@ -56,6 +92,12 @@ void KlinkerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    // --- READ PARAMETERS FROM APVTS ---
+    // Atomic loads are thread-safe and lock-free
+    float currentDelayTimeInMs = apvts.getRawParameterValue("DELAY_MS")->load();
+    float currentFeedback      = apvts.getRawParameterValue("FEEDBACK")->load();
+    float currentWetLevel      = apvts.getRawParameterValue("WET")->load();
 
     // Clear unused output channels
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
@@ -106,9 +148,12 @@ void KlinkerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     writePosition %= delayBufferLength; // Wrap around safely
 }
 
-// No Editor yet
-bool KlinkerAudioProcessor::hasEditor() const { return false; }
-juce::AudioProcessorEditor* KlinkerAudioProcessor::createEditor() { return nullptr; }
+// Editor Enabled
+bool KlinkerAudioProcessor::hasEditor() const { return true; }
+juce::AudioProcessorEditor* KlinkerAudioProcessor::createEditor()
+{
+    return new KlinkerAudioProcessorEditor (*this);
+}
 
 void KlinkerAudioProcessor::getStateInformation (juce::MemoryBlock& /*destData*/) {}
 void KlinkerAudioProcessor::setStateInformation (const void* /*data*/, int /*sizeInBytes*/) {}

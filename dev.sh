@@ -5,7 +5,7 @@ set -e
 
 TARGET="Klinker_Standalone"
 BUILD_DIR="build"
-BINARY="$BUILD_DIR/${TARGET}_artefacts/Standalone/Klinker"
+BINARY="$BUILD_DIR/Klinker_artefacts/Standalone/Klinker"
 
 # Use all CPU cores for parallel builds
 CORES=$(nproc)

@@ -31,6 +31,9 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // The APVTS (Public so the Editor can attach to it)
+    juce::AudioProcessorValueTreeState apvts;
+
 private:
     // ==============================================================================
     // DSP Variables
@@ -42,10 +45,14 @@ private:
     // The "Write Head": current position in the buffer
     int writePosition { 0 };
 
-    // Parameters (hardcoded for now, we'll make knobs later)
-    float currentDelayTimeInMs { 350.0f }; // 350ms slapback
-    float currentFeedback { 0.4f };        // 40% repeats
-    float currentWetLevel { 0.5f };        // 50% effect mix
+private:
+    // Helper to define our parameter layout (Ranges, Steps, IDs)
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    
+    // Internal smoothing buffers or variables if needed, but for now we read directly from APVTS
+    // or use a smoothed value in processBlock.
+
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KlinkerAudioProcessor)
 };
