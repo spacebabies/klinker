@@ -27,6 +27,9 @@ FetchContent_MakeAvailable(juce)
 # 2. Define the Plugin
 juce_add_plugin(Klinker
     COMPANY_NAME "Space Babies"
+    COMPANY_WEBSITE "https://www.spacebabies.nl"
+    COMPANY_EMAIL "info@spacebabies.nl"
+    COMPANY_COPYRIGHT "Copyright (c) 2026 Space Babies"
     BUNDLE_ID "nl.spacebabies.Klinker"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
