@@ -13,7 +13,12 @@ const juce::String KlinkerAudioProcessor::getName() const { return "Klinker"; }
 bool KlinkerAudioProcessor::acceptsMidi() const { return false; }
 bool KlinkerAudioProcessor::producesMidi() const { return false; }
 bool KlinkerAudioProcessor::isMidiEffect() const { return false; }
-double KlinkerAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+double KlinkerAudioProcessor::getTailLengthSeconds() const
+{
+    // Return the current delay time so the host knows how long the tail is
+    // This prevents audio from being cut off abruptly when playback stops
+    return currentDelayTimeInMs / 1000.0;
+}
 
 int KlinkerAudioProcessor::getNumPrograms() { return 1; }
 int KlinkerAudioProcessor::getCurrentProgram() { return 0; }
@@ -26,7 +31,9 @@ void KlinkerAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBl
     // 1. Calculate how much buffer size we need for max 2 seconds of delay
     // + safety margin.
     const int numInputChannels = getTotalNumInputChannels();
-    const int delayBufferSize = 2 * (int)sampleRate; // 2 seconds capacity
+    // Buffer size = 2 seconds worth of samples (e.g., 96000 samples @ 48kHz)
+    // This is the maximum delay window - all delay times must fit within this
+    const int delayBufferSize = 2 * (int)sampleRate;
 
     // 2. Initialize the delay buffer
     delayBuffer.setSize (numInputChannels, delayBufferSize);

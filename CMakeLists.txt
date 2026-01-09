@@ -2,6 +2,19 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Klinker VERSION 0.0.1)
 
+# ==============================================================================
+# BUILD OPTIMIZATIONS
+# ==============================================================================
+
+# Compiler cache - dramatically speeds up rebuilds
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+endif()
+
+# ==============================================================================
 # 1. JUCE is a hard dependency
 include(FetchContent)
 FetchContent_Declare(
