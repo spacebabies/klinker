@@ -30,7 +30,7 @@ sudo apt install build-essential cmake libasound2-dev libx11-dev libxext-dev lib
 ## Compile
 
 ```bash
-git clone [https://github.com/spacebabies/klinker.git](https://github.com/spacebabies/klinker.git)
+git clone git@github.com:spacebabies/klinker.git
 cd klinker
 cmake -B build
 cmake --build build --target Klinker_Standalone
