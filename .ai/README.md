@@ -9,23 +9,20 @@
 - **Target OS:** Linux (Fedora KDE / Wayland), cross-platform compatible code.
 
 ## Code Style & Conventions
-- **Comments:** ALWAYS in English.
-- **Code:** ALWAYS in English.
-- **Class Names:** English (avoid Dutch naming in code).
-- **Format:** K&R or Allman, keep it consistent.
+- **Language:** Code, Comments, and Class Names must be STRICTLY English.
+- **Naming:** CamelCase for classes, camelCase for variables.
 - **Modern C++:** Use `auto`, `nullptr`, smart pointers where possible.
-- Prefer JUCE internal modules over external libs unless necessary (e.g. strict real-time safety).
+- **Dependencies:** Conservative. Use JUCE modules unless external libs are strictly better/necessary.
 
 ## Build System (CMake)
 - **Do NOT use Projucer.** We use a native CMake workflow.
-- **Source:** `Source/PluginProcessor.h/cpp` (Logic) & `Source/PluginEditor.h/cpp` (GUI).
 - **Build Command:** `cmake -B build && cmake --build build --target Klinker_Standalone`
-- **Known Linux Issues (Fixed in CMakeLists.txt):**
-  - Explicitly links `gtk+-x11-3.0` and `webkit2gtk-4.1` headers via PkgConfig.
-  - Explicitly links `libcurl` (required by `juce_core`).
-  - `JuceHeader.h` is NOT available. Include specific modules (e.g., `#include <juce_audio_utils/juce_audio_utils.h>`).
+- **Linux Specifics (Handled in CMakeLists.txt):**
+  - Requires explicit linking of `gtk+-x11-3.0`, `webkit2gtk-4.1`, and `libcurl`.
+  - Headers must be found via PkgConfig (already configured).
+  - `JuceHeader.h` does NOT exist. Include specific modules (e.g., `#include <juce_audio_utils/juce_audio_utils.h>`).
 
 ## Current Status
-- Basic "Hello World" builds and runs.
-- Bundle ID set to `nl.spacebabies.Klinker`.
-- Delay engine (circular buffer) logic is drafted but NOT yet implemented in main branch.
+- Project compiles and runs (Standalone).
+- Bundle ID: `nl.spacebabies.Klinker`.
+- Basic DSP Skeleton (Circular Buffer) is drafted in `TODO.md` but needs verification/implementation.

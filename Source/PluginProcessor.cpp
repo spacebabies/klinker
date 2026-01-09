@@ -21,10 +21,21 @@ void KlinkerAudioProcessor::setCurrentProgram (int /*index*/) {}
 const juce::String KlinkerAudioProcessor::getProgramName (int /*index*/) { return {}; }
 void KlinkerAudioProcessor::changeProgramName (int /*index*/, const juce::String& /*newName*/) {}
 
-void KlinkerAudioProcessor::prepareToPlay (double /*sampleRate*/, int /*samplesPerBlock*/)
+void KlinkerAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    // 1. Calculate how much buffer size we need for max 2 seconds of delay
+    // + safety margin.
+    const int numInputChannels = getTotalNumInputChannels();
+    const int delayBufferSize = 2 * (int)sampleRate; // 2 seconds capacity
+
+    // 2. Initialize the delay buffer
+    delayBuffer.setSize (numInputChannels, delayBufferSize);
+
+    // 3. Clear garbage data
+    delayBuffer.clear();
+
+    // 4. Reset write head
+    writePosition = 0;
 }
 
 void KlinkerAudioProcessor::releaseResources()
@@ -39,14 +50,53 @@ void KlinkerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // Clear any output channels that didn't contain input data,
-    // (because these aren't guaranteed to be empty - they may contain garbage).
+    // Clear unused output channels
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // For now: Silence/Passthrough is fine.
+    // Audio processing usually happens per channel (Left, Right)
+    const int bufferLength = buffer.getNumSamples();
+    const int delayBufferLength = delayBuffer.getNumSamples();
+
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        // Get pointers to the raw data (faster than calling getSample repeatedly)
+        // 'channelData' is the main audio stream (Input -> Output)
+        // 'delayData' is our internal tape loop
+        auto* channelData = buffer.getWritePointer (channel);
+        auto* delayData = delayBuffer.getWritePointer (channel);
+
+        // Calculate the read position (The Past)
+        // Formula: ReadPos = WritePos - (Time * SampleRate)
+        const int delaySamples = (int)(currentDelayTimeInMs / 1000.0f * getSampleRate());
+
+        // Process sample by sample
+        for (int sample = 0; sample < bufferLength; ++sample)
+        {
+            // 1. Calculate where to read from in the circular buffer
+            // We add delayBufferLength to handle negative numbers before modulo
+            int readPosition = (writePosition + sample - delaySamples + delayBufferLength) % delayBufferLength;
+
+            // 2. Fetch the delayed sample
+            float delayedSample = delayData[readPosition];
+
+            // 3. Add the input sample to the delay buffer (for the future)
+            // Include feedback so it repeats!
+            // WritePos for this specific sample needs to wrap around too
+            int currentWritePos = (writePosition + sample) % delayBufferLength;
+
+            // Input + (Delayed * Feedback)
+            delayData[currentWritePos] = channelData[sample] + (delayedSample * currentFeedback);
+
+            // 4. Mix the delayed signal into the main output
+            // Dry signal is already in channelData[sample], we just add the Wet signal
+            channelData[sample] += delayedSample * currentWetLevel;
+        }
+    }
+
+    // Advance the write position for the NEXT block of audio
+    writePosition += bufferLength;
+    writePosition %= delayBufferLength; // Wrap around safely
 }
 
 // No Editor yet
