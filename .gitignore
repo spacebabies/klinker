@@ -1,0 +1,15 @@
+# Build directories
+build/
+cmake-build-*/
+.juce-project/
+
+# IDE settings (VS Code / JetBrains)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Junk
+.DS_Store
+Thumbs.db
+
